@@ -1,0 +1,46 @@
+#!/bin/bash
+#SBATCH --job-name=nlp2brain_scramble
+#SBATCH --partition=gpu_a100
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --gpus-per-node=1
+#SBATCH --time=4:00:00
+#SBATCH --output=logs/%x_%j.out
+
+cd /home/scur0418/NLP2BrainEmbed
+
+module purge
+module load 2023
+module load Python/3.11.3-GCCcore-12.3.0
+module load CUDA/12.1.1
+source $HOME/venvs/nlp2brain/bin/activate
+
+export HF_HOME=/scratch-shared/$USER/hf_dir
+export HF_HUB_CACHE=/scratch-shared/$USER/hf_dir
+mkdir -p logs data results/scramble
+
+for P in P01 M02 M03 M04 M07 M15; do 
+    for MODEL_KEY in llm embedding; do
+        if [ "$MODEL_KEY" = "llm" ]; then
+            MODEL_NAME=Qwen/Qwen3-4B
+        else
+            MODEL_NAME=Qwen/Qwen3-Embedding-4B
+        fi
+
+        # Bag-of-words ablation.
+        TAG=${P}_qwen3-4b-${MODEL_KEY}
+        python scripts/extract_embeddings.py \
+            --mat-path MRI_data/${P}/data_243sentences.mat \
+            --model-name $MODEL_NAME \
+            --pooling last \
+            --scramble --scramble-seed 0 \
+            --output data/scramble/${TAG}.npz \
+            --level passage --dtype float16
+
+        python scripts/run_encoding.py \
+            --mat-path MRI_data/${P}/data_243sentences.mat \
+            --embeddings data/scramble/${TAG}.npz \
+            --output-dir results/scramble/${TAG} \
+            --level passage
+    done
+done
