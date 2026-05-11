@@ -4,7 +4,9 @@
 
 set -e
 
-cd /home/scur0418/NLP2BrainEmbed
+# cd to repo root (relative to this script)
+cd "$(dirname "$0")/.."
+echo "working dir: $(pwd)"
 
 module purge
 module load 2023
