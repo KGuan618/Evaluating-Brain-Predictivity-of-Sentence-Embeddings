@@ -1,0 +1,5 @@
+*.npz
+*.pycdata/
+results/
+MRI_data/
+*.pyc

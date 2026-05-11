@@ -7,7 +7,7 @@
 #SBATCH --time=6:00:00
 #SBATCH --output=logs/%x_%j.out
 
-cd /home/scur0418/NLP2BrainEmbed
+cd /home/scur0419/NLP2BrainEmbed
 
 module purge
 module load 2023
