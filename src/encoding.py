@@ -29,17 +29,6 @@ def fit_encoding_model(model_embeddings, brain_responses,
     StandardScaler (centering only) + KernelRidgeCV inside, with per-voxel
     alpha selection via an inner 5-fold CV. Accuracy is per-voxel Pearson
     correlation between predictions and true responses.
-
-    Args:
-        model_embeddings: (n_stimuli, n_features) array.
-        brain_responses:  (n_stimuli, n_voxels) array.
-        n_splits: outer KFold splits.
-        alphas: array of alpha values for the inner CV search.
-        inner_cv_splits: number of inner CV folds for alpha selection.
-        verbose: if True, print per-fold means.
-
-    Returns:
-        dict with 'accs_train' and 'accs_test', each shape (n_splits, n_voxels).
     """
     if alphas is None:
         alphas = DEFAULT_ALPHAS
@@ -83,14 +72,6 @@ def fit_encoding_per_layer(layer_embeddings, brain_responses,
                            verbose=True):
     """
     Run fit_encoding_model once per layer.
-
-    Args:
-        layer_embeddings: (n_layers, n_stimuli, hidden_dim) array.
-        brain_responses:  (n_stimuli, n_voxels) array.
-
-    Returns:
-        dict with 'accs_train' and 'accs_test', each shape
-        (n_layers, n_splits, n_voxels).
     """
     n_layers = layer_embeddings.shape[0]
     _, n_voxels = brain_responses.shape
@@ -123,11 +104,5 @@ def fit_encoding_per_layer(layer_embeddings, brain_responses,
 def summarize_layer_accuracies(accs):
     """
     Collapse per-voxel, per-fold accuracies down to one number per layer.
-
-    Args:
-        accs: (n_layers, n_splits, n_voxels) array.
-
-    Returns:
-        (n_layers,) array of mean accuracy per layer.
     """
     return accs.mean(axis=(1, 2))

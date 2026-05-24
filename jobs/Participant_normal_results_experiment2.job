@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=nlp2brain_experiment2
-#SBATCH --partition=gpu_a100
+#SBATCH --partition=gpu_h100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gpus-per-node=1
-#SBATCH --time=6:00:00
+#SBATCH --time=2:00:00
 #SBATCH --output=logs/%x_%j.out
 
 cd /home/scur0418/NLP2BrainEmbed
@@ -40,6 +40,7 @@ for P in P01 M02 M04 M07 M08 M09 M14 M15; do
             --mat-path MRI_data/${P}/data_384sentences.mat \
             --embeddings data/experiment2/${TAG}.npz \
             --output-dir results/experiment2/${TAG} \
-            --level passage
+            --level passage \
+            --save-voxelwise
     done
 done

@@ -37,8 +37,6 @@ AVAILABLE_REGIONS = [
 def load_participant_data(mat_path):
     """
     Load a participant's .mat file (e.g., M02/data_243sentences.mat).
-
-    Returns the full dict loaded via scipy.io.loadmat with simplify_cells=True.
     """
     data = loadmat(mat_path, simplify_cells=True)
     return data
@@ -47,14 +45,6 @@ def load_participant_data(mat_path):
 def get_region_column_indexes(data, region='languageLH'):
     """
     Return the voxel/column indexes corresponding to a given atlas region.
-
-    Args:
-        data: dict loaded via `load_participant_data`.
-        region: name of the atlas as found in data['meta']['atlases'],
-            e.g. 'languageLH', 'languageRH', 'MD', 'DMN', 'visual', etc.
-
-    Returns:
-        1D np.ndarray of integer column indexes into the examples_* matrices.
     """
     atlases = data['meta']['atlases']
     matches = np.where(atlases == region)[0]
@@ -81,9 +71,8 @@ def get_sentence_brain_responses(data, column_indexes):
 
 
 def _scramble(text, rng):
-    """Shuffle whitespace-separated tokens of `text` using `rng`.
-
-    Punctuation stays attached to its token ("dog." stays "dog.").
+    """
+    Shuffle whitespace-separated tokens.
     """
     tokens = text.split()
     rng.shuffle(tokens)
@@ -93,16 +82,6 @@ def _scramble(text, rng):
 def get_passages(data, scramble=False, scramble_seed=42):
     """
     Build passage-level texts by joining their constituent sentences.
-
-    Args:
-        data: dict loaded via `load_participant_data`.
-        scramble: if True, shuffle the whitespace-separated tokens within
-            each passage (bag-of-words ablation). Off by default.
-        scramble_seed: base seed for reproducible scrambling. Each passage
-            uses a deterministic per-index seed derived from this.
-
-    Returns:
-        List of passage strings.
     """
     n_passages = int(data['labelsPassageForEachSentence'].max())
     passages = [
@@ -120,11 +99,6 @@ def get_passages(data, scramble=False, scramble_seed=42):
 def get_sentences(data, scramble=False, scramble_seed=42):
     """
     Return the list of sentence-level stimuli.
-
-    Args:
-        data: dict loaded via `load_participant_data`.
-        scramble: if True, shuffle words within each sentence. Off by default.
-        scramble_seed: base seed for reproducible scrambling.
     """
     sentences = list(data['keySentences'])
     if scramble:
@@ -142,18 +116,6 @@ def load_stimuli_and_responses(
     scramble=False,
     scramble_seed=42,
 ):
-    """
-    Args:
-        mat_path: path to a participant's .mat file.
-        level: 'passage' or 'sentence'.
-        region: atlas name to restrict voxels to (see AVAILABLE_REGIONS).
-        scramble: if True, shuffle words within each stimulus. Off by default.
-        scramble_seed: base seed for reproducible scrambling.
-
-    Returns:
-        texts: list of strings (passages or sentences).
-        brain_responses: np.ndarray of shape (n_stimuli, n_voxels).
-    """
     data = load_participant_data(mat_path)
     column_indexes = get_region_column_indexes(data, region=region)
 

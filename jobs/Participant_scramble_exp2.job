@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=nlp2brain_experiment3
+#SBATCH --job-name=nlp2brain_scramble
 #SBATCH --partition=gpu_h100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -17,9 +17,9 @@ source $HOME/venvs/nlp2brain/bin/activate
 
 export HF_HOME=/scratch-shared/$USER/hf_dir
 export HF_HUB_CACHE=/scratch-shared/$USER/hf_dir
-mkdir -p logs data results
+mkdir -p logs data results/scramble results/scramble_exp2
 
-for P in P01 M02 M03 M04 M07 M15; do 
+for P in P01 M02 M04 M07 M08 M09 M14 M15; do 
     for MODEL_KEY in llm embedding; do
         if [ "$MODEL_KEY" = "llm" ]; then
             MODEL_NAME=Qwen/Qwen3-4B
@@ -27,19 +27,20 @@ for P in P01 M02 M03 M04 M07 M15; do
             MODEL_NAME=Qwen/Qwen3-Embedding-4B
         fi
 
-        TAG=${P}_qwen3-4b-${MODEL_KEY}_passages
-
+        # Bag-of-words ablation.
+        TAG=${P}_qwen3-4b-${MODEL_KEY}
         python scripts/extract_embeddings.py \
-            --mat-path MRI_data/${P}/data_243sentences.mat \
+            --mat-path MRI_data/${P}/data_384sentences.mat \
             --model-name $MODEL_NAME \
             --pooling last \
-            --output data/experiment3/${TAG}.npz \
+            --scramble --scramble-seed 0 \
+            --output data/scramble_exp2/${TAG}.npz \
             --level passage --dtype float16
 
         python scripts/run_encoding.py \
-            --mat-path MRI_data/${P}/data_243sentences.mat \
-            --embeddings data/experiment3/${TAG}.npz \
-            --output-dir results/experiment3/${TAG} \
+            --mat-path MRI_data/${P}/data_384sentences.mat \
+            --embeddings data/scramble_exp2/${TAG}.npz \
+            --output-dir results/scramble_exp2/${TAG} \
             --level passage \
             --save-voxelwise
     done

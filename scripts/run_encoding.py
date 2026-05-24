@@ -10,6 +10,18 @@ Example:
         --embeddings data/M02_qwen3_passages.npz \
         --region languageLH \
         --output-dir results/M02_qwen3_passages
+
+    To also save per-voxel accuracies use flag:
+        --save-voxelwise
+
+    With --save-voxelwise the output directory will contain:
+        layer_summary.txt               – mean train/test accuracy per layer
+        layer_accuracies.npz            – mean accuracies (always written)
+        layer_accuracies_extended.npz   – full (n_layers, n_splits, n_voxels)
+                                          arrays (only with --save-voxelwise)
+
+    Re-running with --save-voxelwise will add layer_accuracies_extended.npz
+    without overwriting the other two files.
 """
 
 import argparse
@@ -39,6 +51,13 @@ def parse_args():
                              "paired brain responses.")
     parser.add_argument('--n-splits', type=int, default=5)
     parser.add_argument('--output-dir', required=True)
+    parser.add_argument('--save-voxelwise', action='store_true',
+                        help="If set, save the full per-voxel, per-fold "
+                             "accuracy arrays (n_layers, n_splits, n_voxels) "
+                             "as layer_accuracies_extended.npz inside "
+                             "--output-dir, alongside the standard outputs. "
+                             "The standard layer_accuracies.npz and "
+                             "layer_summary.txt are always written regardless.")
     parser.add_argument('--quiet', action='store_true')
     return parser.parse_args()
 
@@ -59,8 +78,6 @@ def main():
     layer_embeddings, metadata = load_embeddings(args.embeddings)
     print(f"  embeddings shape: {layer_embeddings.shape}")
 
-    # Sanity check: if the embeddings .npz recorded a region, it should
-    # match what we're fitting against here.
     meta_region = metadata.get('region') if isinstance(metadata, dict) else None
     if meta_region and meta_region != args.region:
         print(f"  WARNING: embeddings were extracted with region="
@@ -86,12 +103,6 @@ def main():
     accs_train = result['accs_train']
     accs_test = result['accs_test']
 
-    np.savez_compressed(
-        output_dir / 'layer_accuracies.npz',
-        accs_train=accs_train,
-        accs_test=accs_test,
-    )
-
     layer_means_test = summarize_layer_accuracies(accs_test)
     layer_means_train = summarize_layer_accuracies(accs_train)
 
@@ -102,10 +113,30 @@ def main():
         f.write("layer\ttrain_acc\ttest_acc\n")
         for i, (tr, te) in enumerate(zip(layer_means_train, layer_means_test)):
             f.write(f"{i}\t{tr:.4f}\t{te:.4f}\n")
+    print(f"Saved summary        -> {summary_path}")
 
-    print()
-    print(f"Saved per-voxel accuracies to {output_dir / 'layer_accuracies.npz'}")
-    print(f"Saved summary to {summary_path}")
+    accs_path = output_dir / 'layer_accuracies.npz'
+    np.savez_compressed(
+        accs_path,
+        layer_means_train=layer_means_train,
+        layer_means_test=layer_means_test,
+        region=args.region,
+        n_voxels=brain_responses.shape[1],
+    )
+    print(f"Saved layer means    -> {accs_path}")
+
+
+    if args.save_voxelwise:
+        extended_path = output_dir / 'layer_accuracies_extended.npz'
+        np.savez_compressed(
+            extended_path,
+            accs_train=accs_train,
+            accs_test=accs_test,
+            region=args.region,
+            n_voxels=brain_responses.shape[1],
+        )
+        print(f"Saved voxelwise full -> {extended_path}")
+
     print()
     print("Layer   Train    Test")
     for i, (tr, te) in enumerate(zip(layer_means_train, layer_means_test)):
